@@ -1,0 +1,301 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==============================================
+// USERS, AUTH, AND BILLING
+// ==============================================
+
+model User {
+  id               String           @id @default(cuid())
+  clerkId          String           @unique // Linked to Clerk Authentication
+  email            String           @unique
+  name             String?
+  avatarUrl        String?
+  
+  planId           String?
+  plan             Plan?            @relation(fields: [planId], references: [id])
+  
+  agencyId         String?
+  agency           Agency?          @relation("UserAgency", fields: [agencyId], references: [id])
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  creatorProfile   CreatorProfile?
+  subscriptions    Subscription[]
+  agencyMemberships AgencyMember[]
+  ownedAgencies    Agency[]         @relation("AgencyOwner")
+  approvedWorkflows ApprovalWorkflow[]
+  scriptVersions   ScriptVersion[]
+}
+
+model Plan {
+  id               String           @id @default(cuid())
+  name             String
+  priceMonthly     Int
+  priceAnnual      Int
+  limits           Json             // Stores limits like { scripts: 50, scans: 10 }
+  
+  users            User[]
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id])
+  planId           String
+  plan             Plan             @relation(fields: [planId], references: [id])
+  
+  status           String           // e.g., "active", "canceled", "past_due"
+  currentPeriodEnd DateTime
+  razorpaySubId    String?          @unique
+  stripeSubId      String?          @unique
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+// ==============================================
+// CREATOR PROFILES & VOICE DNA
+// ==============================================
+
+model CreatorProfile {
+  id                 String           @id @default(cuid())
+  userId             String           @unique
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  niche              String?
+  platforms          String[]         // e.g., ["Instagram", "YouTube"]
+  languagePref       String           @default("Hinglish") // Hindi, English, Hinglish
+  onboardingComplete Boolean          @default(false)
+
+  voiceProfiles      VoiceProfile[]
+  scripts            Script[]
+  captions           Caption[]
+  scheduledPosts     ScheduledPost[]
+  agencyLinks        AgencyCreator[]
+  
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model VoiceProfile {
+  id                 String           @id @default(cuid())
+  creatorId          String
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  rawAnalysis        Json             // Raw GPT-4 output
+  vocabulary         Json             // Common words/phrases
+  toneScores         Json             // Humor, energy, professionalism, etc.
+  version            Int              @default(1)
+  
+  scripts            Script[]
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+// ==============================================
+// CONTENT OPERATIONS
+// ==============================================
+
+model Script {
+  id                 String           @id @default(cuid())
+  creatorId          String
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  topic              String
+  platform           String
+  tone               String
+  content            String           @db.Text
+  
+  voiceProfileId     String?
+  voiceProfile       VoiceProfile?    @relation(fields: [voiceProfileId], references: [id])
+  
+  status             String           @default("draft") // draft, completed, approved
+  
+  versions           ScriptVersion[]
+  captions           Caption[]
+  approvalWorkflows  ApprovalWorkflow[]
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model ScriptVersion {
+  id                 String           @id @default(cuid())
+  scriptId           String
+  script             Script           @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  
+  content            String           @db.Text
+  createdById        String
+  createdBy          User             @relation(fields: [createdById], references: [id])
+  
+  createdAt          DateTime         @default(now())
+}
+
+model Caption {
+  id                 String           @id @default(cuid())
+  creatorId          String
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  scriptId           String?
+  script             Script?          @relation(fields: [scriptId], references: [id])
+  
+  platform           String
+  content            String           @db.Text
+  hashtags           String[]
+  variant            Int              @default(1)
+  
+  scheduledPosts     ScheduledPost[]
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model ScheduledPost {
+  id                 String           @id @default(cuid())
+  creatorId          String
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  captionId          String?
+  caption            Caption?         @relation(fields: [captionId], references: [id])
+  
+  platform           String
+  scheduledAt        DateTime
+  publishedAt        DateTime?
+  status             String           @default("scheduled") // scheduled, published, failed
+  
+  metrics            PostMetric?
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+// ==============================================
+// ANALYTICS & INTELLIGENCE
+// ==============================================
+
+model PostMetric {
+  id                 String           @id @default(cuid())
+  scheduledPostId    String           @unique
+  scheduledPost      ScheduledPost    @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+  
+  likes              Int              @default(0)
+  comments           Int              @default(0)
+  shares             Int              @default(0)
+  saves              Int              @default(0)
+  reach              Int              @default(0)
+  watchTimePct       Float            @default(0.0)
+  
+  syncedAt           DateTime         @default(now())
+}
+
+model TrendScore {
+  id                 String           @id @default(cuid())
+  topic              String
+  niche              String
+  score              Float
+  velocity           Float
+  
+  scrapedAt          DateTime         @default(now())
+}
+
+model CompetitorData {
+  id                 String           @id @default(cuid())
+  handle             String
+  platform           String
+  postUrl            String           @unique
+  views              Int
+  engagementRate     Float
+  hookText           String?          @db.Text
+  
+  scrapedAt          DateTime         @default(now())
+}
+
+// ==============================================
+// AGENCY B2B LAYER
+// ==============================================
+
+model Agency {
+  id                 String           @id @default(cuid())
+  name               String
+  logoUrl            String?
+  whiteLabelDomain   String?
+  
+  ownerId            String
+  owner              User             @relation("AgencyOwner", fields: [ownerId], references: [id])
+  
+  members            AgencyMember[]
+  managedCreators    AgencyCreator[]
+  approvalWorkflows  ApprovalWorkflow[]
+  users              User[]           @relation("UserAgency")
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+enum AgencyRole {
+  OWNER
+  MANAGER
+  CREATOR
+}
+
+model AgencyMember {
+  id                 String           @id @default(cuid())
+  agencyId           String
+  agency             Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role               AgencyRole       @default(CREATOR)
+
+  createdAt          DateTime         @default(now())
+  
+  @@unique([agencyId, userId])
+}
+
+model AgencyCreator {
+  id                 String           @id @default(cuid())
+  agencyId           String
+  agency             Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  creatorId          String
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  assignedManagerId  String?
+
+  createdAt          DateTime         @default(now())
+  
+  @@unique([agencyId, creatorId])
+}
+
+model ApprovalWorkflow {
+  id                 String           @id @default(cuid())
+  agencyId           String
+  agency             Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  scriptId           String
+  script             Script           @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  
+  status             String           @default("pending") // pending, approved, rejected
+  
+  approverId         String?
+  approver           User?            @relation(fields: [approverId], references: [id])
+  
+  approvedAt         DateTime?
+  comments           String?          @db.Text
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
