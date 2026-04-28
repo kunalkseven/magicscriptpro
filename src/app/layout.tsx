@@ -46,8 +46,8 @@ export const metadata: Metadata = {
 };
 
 import { ClerkProvider } from "@clerk/nextjs";
-
 import { TRPCReactProvider } from "@/trpc/react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function RootLayout({
   children,
@@ -58,7 +58,9 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} h-full`}>
         <body className="min-h-full flex flex-col noise-overlay">
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <ErrorBoundary>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </ErrorBoundary>
         </body>
       </html>
     </ClerkProvider>
