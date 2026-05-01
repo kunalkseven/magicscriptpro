@@ -7,8 +7,10 @@ import {
   Play, ArrowRight, Check, ChevronDown, Star, Shield, Bolt,
   Cpu, Layers, Eye, Target, Clock, Trophy, Crown, Rocket,
   MessageSquare, Hash, Repeat, Send, PenTool, Brain,
-  Menu, X, ExternalLink, Camera, Video, Briefcase
+  Menu, X, ExternalLink, Camera, Video, Briefcase, Bookmark, Building2
 } from "lucide-react";
+import { useUser, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 
 /* ================================================================
    ANIMATION VARIANTS
@@ -60,13 +62,13 @@ function Section({ children, className = "", id = "" }: { children: React.ReactN
     </motion.section>
   );
 }
-
 /* ================================================================
    HEADER
    ================================================================ */
 function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isSignedIn } = useUser();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -103,7 +105,7 @@ function Header() {
     >
       <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 72 }}>
         {/* Logo */}
-        <a href="#" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
           <div style={{
             width: 38, height: 38, borderRadius: 10,
             background: "var(--gradient-primary)",
@@ -115,7 +117,7 @@ function Header() {
           <span style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
             Creator<span style={{ color: "var(--primary-light)" }}>AI</span> Pro
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Nav */}
         <nav style={{ display: "flex", alignItems: "center", gap: 8 }} className="desktop-nav">
@@ -128,12 +130,23 @@ function Header() {
 
         {/* CTA Buttons */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }} className="desktop-nav">
-          <a href="#pricing" className="btn btn-secondary btn-sm" style={{ textDecoration: "none" }}>
-            Sign In
-          </a>
-          <a href="#pricing" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
-            Start Free <ArrowRight size={16} />
-          </a>
+          {!isSignedIn ? (
+            <>
+              <Link href="/sign-in" className="btn btn-secondary btn-sm" style={{ textDecoration: "none" }}>
+                Sign In
+              </Link>
+              <Link href="/sign-up" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+                Start Free <ArrowRight size={16} />
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/dashboard" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+                Dashboard
+              </Link>
+              <UserButton />
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -180,9 +193,15 @@ function Header() {
                 </a>
               ))}
               <div style={{ display: "flex", gap: 12, paddingTop: 20 }}>
-                <a href="#pricing" className="btn btn-primary" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
-                  Start Free
-                </a>
+                {!isSignedIn ? (
+                  <Link href="/sign-up" className="btn btn-primary" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
+                    Start Free
+                  </Link>
+                ) : (
+                  <Link href="/dashboard" className="btn btn-primary" style={{ flex: 1, textDecoration: "none", textAlign: "center" }}>
+                    Dashboard
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>
@@ -260,9 +279,9 @@ function HeroSection() {
 
           {/* CTA Buttons */}
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3} style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 40 }}>
-            <a href="#pricing" className="btn btn-primary btn-lg" style={{ textDecoration: "none" }}>
+            <Link href="/sign-up" className="btn btn-primary btn-lg" style={{ textDecoration: "none" }}>
               Start Free — No Credit Card <ArrowRight size={18} />
-            </a>
+            </Link>
             <a href="#how-it-works" className="btn btn-secondary btn-lg" style={{ textDecoration: "none" }}>
               <Play size={18} /> Watch Demo
             </a>
@@ -353,13 +372,13 @@ function DashboardMock() {
       {/* Sidebar mock */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }} className="hide-on-small">
         {[
-          { icon: Zap, label: "Dashboard", active: true },
-          { icon: TrendingUp, label: "Hot Topics" },
+          { icon: Bolt, label: "Dashboard", active: true },
+          { icon: Globe, label: "Trend Intel" },
           { icon: PenTool, label: "Script Writer" },
-          { icon: Hash, label: "Captions" },
-          { icon: Calendar, label: "Calendar" },
-          { icon: BarChart3, label: "Analytics" },
-          { icon: Brain, label: "Voice DNA" },
+          { icon: Hash, label: "AI Captions" },
+          { icon: Target, label: "Competitors" },
+          { icon: Bookmark, label: "Saved Content" },
+          { icon: Building2, label: "Agency HQ" },
         ].map((item) => (
           <div key={item.label} style={{
             display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
@@ -795,9 +814,9 @@ function AgencySection() {
             </motion.div>
 
             <motion.div variants={fadeUp} custom={4}>
-              <a href="#pricing" className="btn btn-accent btn-lg" style={{ textDecoration: "none" }}>
+              <Link href="/sign-up" className="btn btn-accent btn-lg" style={{ textDecoration: "none" }}>
                 Start Agency Trial <ArrowRight size={18} />
-              </a>
+              </Link>
             </motion.div>
           </div>
 
@@ -1040,9 +1059,9 @@ function PricingSection() {
                 )}
                 <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: 24 }}>{plan.desc}</p>
 
-                <a href="#" className={plan.ctaClass} style={{ textDecoration: "none", width: "100%", marginBottom: 24 }}>
+                <Link href="/sign-up" className={plan.ctaClass} style={{ textDecoration: "none", width: "100%", marginBottom: 24 }}>
                   {plan.cta}
-                </a>
+                </Link>
 
                 <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 20 }}>
                   {plan.features.map((f) => (
@@ -1193,9 +1212,9 @@ function CTABanner() {
               Join 5,000+ Indian creators who've already transformed their content workflow with AI.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-              <a href="#pricing" className="btn btn-primary btn-lg" style={{ textDecoration: "none" }}>
+              <Link href="/sign-up" className="btn btn-primary btn-lg" style={{ textDecoration: "none" }}>
                 Start Free Today <ArrowRight size={18} />
-              </a>
+              </Link>
               <a href="#how-it-works" className="btn btn-secondary btn-lg" style={{ textDecoration: "none" }}>
                 See How It Works
               </a>

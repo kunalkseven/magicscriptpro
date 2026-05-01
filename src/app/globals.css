@@ -68,11 +68,6 @@
 }
 
 /* ===== RESET & BASE ===== */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
 
 html {
   scroll-behavior: smooth;
@@ -107,6 +102,7 @@ body {
   background: var(--text-muted);
 }
 
+@layer components {
 /* ===== UTILITY CLASSES ===== */
 .container {
   max-width: var(--container-max);
@@ -160,12 +156,6 @@ body {
   background: linear-gradient(var(--angle, 135deg), #6C47FF, #A855F7, #EC4899, #FF6B35, #6C47FF);
   background-size: 300% 300%;
   animation: borderRotate 4s linear infinite;
-}
-
-@keyframes borderRotate {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
 }
 
 /* Glow effects */
@@ -253,7 +243,6 @@ body {
   color: var(--primary-light);
   border: 1px solid rgba(108, 71, 255, 0.2);
 }
-
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -330,15 +319,17 @@ body {
 
 /* Card */
 .card {
-  background: var(--bg-card);
+  background: rgba(26, 27, 40, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 32px;
+  padding: 24px;
   transition: all 0.4s var(--ease-out-expo);
 }
 .card:hover {
   border-color: var(--border-default);
-  background: var(--bg-card-hover);
+  background: rgba(34, 35, 58, 0.8);
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
@@ -580,4 +571,5 @@ body {
     padding: 14px 28px;
     font-size: 0.95rem;
   }
+}
 }

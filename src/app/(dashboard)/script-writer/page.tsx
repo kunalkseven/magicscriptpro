@@ -4,16 +4,19 @@ import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { trpc } from "@/trpc/react";
 import { ScriptEditor } from "@/components/editor/ScriptEditor";
-import { Sparkles, Video, Camera, Briefcase, Send, LayoutTemplate } from "lucide-react";
+import { Sparkles, Video, Camera, Briefcase, Send, LayoutTemplate, Zap, Bolt, Wand2, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 const platforms = [
-  { id: "YouTube Shorts", icon: Video },
-  { id: "Instagram Reels", icon: Camera },
-  { id: "LinkedIn Post", icon: Briefcase },
+  { id: "YouTube Shorts", icon: Video, color: "#FF0000" },
+  { id: "Instagram Reels", icon: Camera, color: "#E1306C" },
+  { id: "LinkedIn Post", icon: Briefcase, color: "#0077B5" },
 ];
 
 const tones = ["Engaging", "Educational", "Controversial", "Storytelling", "Humorous"];
+
+const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export default function ScriptWriterPage() {
   const router = useRouter();
@@ -21,13 +24,10 @@ export default function ScriptWriterPage() {
   const [platform, setPlatform] = useState("Instagram Reels");
   const [tone, setTone] = useState("Engaging");
 
-  // Fetch user profile to get language preference
   const { data: user } = trpc.user.getCurrentUser.useQuery();
   
-  // tRPC mutation to save the final script
   const saveScript = trpc.script.saveScript.useMutation({
     onSuccess: () => {
-      alert("Script saved successfully!");
       router.push("/dashboard");
     },
   });
@@ -60,7 +60,6 @@ export default function ScriptWriterPage() {
     });
   };
 
-  // Get the latest AI response content
   const lastMessage = messages.filter(m => m.role === "assistant").pop();
   const latestAssistantMessage = lastMessage?.parts
     ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
@@ -68,96 +67,124 @@ export default function ScriptWriterPage() {
     ?.join("") || "";
 
   return (
-    <div className="min-h-screen bg-[#06070B] text-white">
-      {/* Top Navbar */}
-      <header className="border-b border-[var(--border-subtle)] bg-[rgba(6,7,11,0.8)] backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--gradient-primary)] flex items-center justify-center">
-            <Sparkles size={16} color="white" />
+    <div className="space-y-8 pb-8">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+        <div>
+          <div className="badge mb-4">
+            <Wand2 size={14} />
+            Creative Engine
           </div>
-          <span className="font-bold text-lg">AI Script Writer</span>
+          <h1 className="heading-lg text-white mb-2">
+            Script <span className="text-gradient">Architect</span>
+          </h1>
+          <p className="body-md">
+            Translate your vision into a viral narrative with our fine-tuned AI model.
+          </p>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-64px)] flex flex-col md:flex-row gap-6">
-        
-        {/* Left Sidebar: Configuration */}
-        <div className="w-full md:w-80 flex-shrink-0 flex flex-col gap-6">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-5 shadow-lg">
-            <h2 className="font-semibold text-lg flex items-center gap-2 mb-5">
-              <LayoutTemplate size={18} className="text-[var(--primary-light)]" />
-              Script Settings
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Configuration */}
+        <div className="lg:col-span-4 space-y-6 min-w-0">
+          <div className="card" style={{ padding: '24px' }}>
+            <h2 className="heading-sm text-white mb-6 flex items-center gap-2.5">
+              <LayoutTemplate className="text-[var(--primary)]" size={20} />
+              Configuration
             </h2>
-
-            {/* Topic Input */}
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Topic / Idea</label>
-              <textarea
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="E.g. 3 secret AI tools nobody is talking about..."
-                className="w-full bg-[rgba(255,255,255,0.03)] border border-[var(--border-subtle)] rounded-lg p-3 text-sm focus:outline-none focus:border-[var(--primary-light)] transition-colors resize-none h-24"
-              />
-            </div>
-
-            {/* Platform Selection */}
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Platform</label>
-              <div className="flex flex-col gap-2">
-                {platforms.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPlatform(p.id)}
-                    className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors border ${
-                      platform === p.id 
-                        ? "bg-[rgba(108,71,255,0.1)] border-[var(--primary-light)] text-white" 
-                        : "bg-transparent border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]"
-                    }`}
-                  >
-                    <p.icon size={16} />
-                    {p.id}
-                  </button>
-                ))}
+            
+            <div className="space-y-6">
+              {/* Topic Input */}
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.12em]">The Core Idea</label>
+                <textarea
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="E.g. 3 secret AI tools for creators..."
+                  className="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl p-4 text-sm text-white placeholder:text-[var(--text-disabled)] focus:outline-none focus:border-[var(--primary)]/50 transition-all resize-none h-28 custom-scrollbar"
+                />
               </div>
-            </div>
 
-            {/* Tone Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Tone</label>
-              <select
-                value={tone}
-                onChange={(e) => setTone(e.target.value)}
-                className="w-full bg-[rgba(255,255,255,0.03)] border border-[var(--border-subtle)] rounded-lg p-3 text-sm focus:outline-none focus:border-[var(--primary-light)] appearance-none"
+              {/* Platform Selection */}
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.12em]">Platform</label>
+                <div className="space-y-2">
+                  {platforms.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPlatform(p.id)}
+                      className={`flex items-center justify-between w-full p-3.5 rounded-xl text-sm font-bold transition-all border ${
+                        platform === p.id 
+                          ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg shadow-[var(--primary)]/20" 
+                          : "bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--border-default)]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${platform === p.id ? "bg-white/20" : "bg-white/5"}`}>
+                          <p.icon size={16} />
+                        </div>
+                        {p.id}
+                      </div>
+                      <ChevronRight size={16} className={`transition-all ${platform === p.id ? "opacity-100" : "opacity-0"}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tone Selection */}
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.12em]">Voice & Tone</label>
+                <div className="relative">
+                  <select
+                    value={tone}
+                    onChange={(e) => setTone(e.target.value)}
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl p-4 text-sm font-bold text-white focus:outline-none focus:border-[var(--primary)]/50 transition-all appearance-none cursor-pointer"
+                  >
+                    {tones.map((t) => (
+                      <option key={t} value={t} className="bg-[var(--bg-card)]">{t}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                    <ChevronRight size={18} className="rotate-90" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Generate Button */}
+              <button
+                onClick={handleGenerate}
+                disabled={!topic.trim() || isLoading}
+                className="btn btn-primary w-full mt-4 flex items-center justify-center"
               >
-                {tones.map((t) => (
-                  <option key={t} value={t} className="bg-[#111218]">{t}</option>
-                ))}
-              </select>
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    <span>Synthesizing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Bolt size={18} />
+                    <span>Generate Script</span>
+                  </>
+                )}
+              </button>
             </div>
+          </div>
 
-            {/* Generate Button */}
-            <button
-              onClick={handleGenerate}
-              disabled={!topic.trim() || isLoading}
-              className="w-full btn btn-primary py-3 rounded-lg flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <Sparkles size={18} className="animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Send size={18} />
-                  Write Script
-                </>
-              )}
-            </button>
+          {/* Tips Card */}
+          <div className="card" style={{ padding: '20px', background: 'var(--bg-elevated)' }}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <Sparkles className="text-[var(--accent)]" size={18} />
+              <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Pro Tip</h3>
+            </div>
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+              For better results, include your target audience and a specific "hook" idea in the topic input.
+            </p>
           </div>
         </div>
 
-        {/* Right Area: Editor */}
-        <div className="flex-1 h-full min-h-[500px]">
+        {/* Right: Editor */}
+        <div className="lg:col-span-8 min-h-[600px] min-w-0">
           <ScriptEditor 
             content={latestAssistantMessage} 
             isGenerating={isLoading} 
@@ -165,8 +192,7 @@ export default function ScriptWriterPage() {
             onRegenerate={() => regenerate()}
           />
         </div>
-
-      </main>
+      </div>
     </div>
   );
 }

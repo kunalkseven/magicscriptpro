@@ -3,23 +3,29 @@
 import { useState } from "react";
 import { trpc } from "@/trpc/react";
 import {
-  Search,
-  Eye,
-  BarChart3,
-  MessageSquare,
-  Loader2,
-  Video,
-  Camera,
-  Briefcase,
-  Users,
-  ExternalLink,
+  Search, Eye, BarChart3, MessageSquare, Loader2,
+  Video, Camera, Briefcase, Users, ExternalLink,
+  ChevronRight, Target, Zap,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const platforms = [
-  { id: "Instagram", icon: Camera },
-  { id: "YouTube", icon: Video },
-  { id: "LinkedIn", icon: Briefcase },
+  { id: "Instagram", icon: Camera, color: "#E1306C" },
+  { id: "YouTube", icon: Video, color: "#FF0000" },
+  { id: "LinkedIn", icon: Briefcase, color: "#0077B5" },
 ];
+
+const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.05 } }
+};
+
+const item = {
+  hidden: { y: 14, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { duration: 0.5, ease } }
+};
 
 export default function CompetitorAnalyzerPage() {
   const [handle, setHandle] = useState("");
@@ -29,10 +35,7 @@ export default function CompetitorAnalyzerPage() {
   const requestScrape = trpc.competitor.requestScrape.useMutation({
     onSuccess: () => {
       setSearchedHandle(handle);
-      // Refetch data after a short delay to allow background job to process
-      setTimeout(() => {
-        competitorData.refetch();
-      }, 3000);
+      setTimeout(() => { competitorData.refetch(); }, 3000);
     },
   });
 
@@ -53,173 +56,142 @@ export default function CompetitorAnalyzerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#06070B] text-white">
+    <div className="space-y-8 pb-8">
       {/* Header */}
-      <header className="border-b border-[var(--border-subtle)] bg-[rgba(6,7,11,0.8)] backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--info)] to-[var(--primary)] flex items-center justify-center">
-            <Users size={16} color="white" />
-          </div>
-          <span className="font-bold text-lg">Competitor Analyzer</span>
+      <div>
+        <div className="badge mb-4 border-[var(--info)]/30 text-[var(--info)] bg-[var(--info)]/10">
+          <Target size={14} />
+          Intel Gathering
         </div>
-      </header>
+        <h1 className="heading-lg text-white mb-2">
+          Competitor <span className="text-gradient">Analyzer</span>
+        </h1>
+        <p className="body-md">Deconstruct top-performing hooks and engagement patterns from your niche rivals.</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Section */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 shadow-lg mb-8">
-          <h2 className="font-semibold text-lg flex items-center gap-2 mb-5">
-            <Search size={18} className="text-[var(--info)]" />
-            Analyze a Competitor
-          </h2>
-
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Handle Input */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Creator Handle
-              </label>
+      {/* Search Console */}
+      <div className="card" style={{ padding: '24px' }}>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Handle Input */}
+          <div className="flex-1 space-y-3">
+            <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.12em]">Creator Handle</label>
+            <div className="relative">
               <input
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
                 placeholder="@username or channel name"
-                className="w-full bg-[rgba(255,255,255,0.03)] border border-[var(--border-subtle)] rounded-lg p-3 text-sm focus:outline-none focus:border-[var(--primary-light)] transition-colors"
+                className="w-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl p-3.5 text-sm text-white placeholder:text-[var(--text-disabled)] focus:outline-none focus:border-[var(--info)]/50 transition-all pr-10"
                 onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
               />
+              <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             </div>
+          </div>
 
-            {/* Platform Selector */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Platform
-              </label>
-              <div className="flex gap-2">
-                {platforms.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPlatform(p.id)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm transition-colors border ${
-                      platform === p.id
-                        ? "bg-[rgba(108,71,255,0.1)] border-[var(--primary-light)] text-white"
-                        : "bg-transparent border-[var(--border-subtle)] text-[var(--text-secondary)]"
-                    }`}
-                  >
-                    <p.icon size={16} />
-                    {p.id}
-                  </button>
-                ))}
-              </div>
+          {/* Platform Selector */}
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.12em]">Platform</label>
+            <div className="flex gap-2">
+              {platforms.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPlatform(p.id)}
+                  className={`flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all border ${
+                    platform === p.id
+                      ? "bg-[var(--info)] text-white border-[var(--info)] shadow-lg shadow-[var(--info)]/20"
+                      : "bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--border-default)]"
+                  }`}
+                >
+                  <p.icon size={16} />
+                  {p.id}
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* Analyze Button */}
-            <div className="flex items-end">
-              <button
-                onClick={handleAnalyze}
-                disabled={!handle.trim() || requestScrape.isPending}
-                className="btn btn-primary py-3 px-6 rounded-lg flex items-center gap-2 disabled:opacity-50"
-              >
-                {requestScrape.isPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <BarChart3 size={16} />
-                )}
-                Analyze
-              </button>
-            </div>
+          {/* Analyze Button */}
+          <div className="flex items-end">
+            <button
+              onClick={handleAnalyze}
+              disabled={!handle.trim() || requestScrape.isPending}
+              className="btn btn-primary w-full lg:w-auto h-[50px] shadow-[var(--info)]/30 border-[var(--info)]/50"
+              style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--primary) 100%)' }}
+            >
+              {requestScrape.isPending ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <BarChart3 size={18} />
+              )}
+              <span>Analyze</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Queued Message */}
+      {/* Queued Message */}
+      <AnimatePresence>
         {requestScrape.isPending && (
-          <div className="flex items-center gap-3 bg-[rgba(59,130,246,0.08)] border border-[rgba(59,130,246,0.2)] rounded-xl p-4 mb-6">
-            <Loader2 size={18} className="animate-spin text-[var(--info)]" />
-            <p className="text-sm text-[var(--text-secondary)]">
-              Scrape job queued for <strong>@{handle}</strong> on {platform}. Results will appear shortly...
-            </p>
-          </div>
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+            className="flex items-center gap-3 bg-[var(--info)]/10 border border-[var(--info)]/20 rounded-xl p-4">
+            <Loader2 size={18} className="animate-spin text-[var(--info)] flex-shrink-0" />
+            <p className="body-md text-sm">Scrape job queued for <span className="text-white font-semibold">@{handle}</span>. Results syncing shortly...</p>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Results */}
-        {competitorData.data && competitorData.data.length > 0 && (
-          <div>
-            <h2 className="heading-sm mb-6">
-              Results for{" "}
-              <span className="text-gradient">@{searchedHandle}</span>
+      {/* Results */}
+      <AnimatePresence mode="wait">
+        {competitorData.data && competitorData.data.length > 0 ? (
+          <motion.div key="results" variants={container} initial="hidden" animate="show" className="space-y-5">
+            <h2 className="heading-sm text-white flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-[var(--info)] rounded-full" />
+              Results: <span className="text-[var(--info)]">@{searchedHandle}</span>
             </h2>
 
             <div className="space-y-4">
               {competitorData.data.map((post) => (
-                <div
-                  key={post.id}
-                  className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-5 hover:border-[var(--border-default)] transition-all"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    {/* Hook Text */}
-                    <div className="flex-1">
-                      <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
-                        &ldquo;{post.hookText}&rdquo;
-                      </p>
-                      <a
-                        href={post.postUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-[var(--primary-light)] hover:underline flex items-center gap-1"
-                      >
-                        View Post <ExternalLink size={10} />
+                <motion.div key={post.id} variants={item}
+                  className="card group hover:border-[var(--border-default)] transition-all" style={{ padding: '24px' }}>
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex-1 min-w-0">
+                      <p className="body-md text-white/90 leading-relaxed mb-3">&ldquo;{post.hookText}&rdquo;</p>
+                      <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-bold text-[var(--info)] uppercase tracking-widest hover:text-white transition-colors">
+                        View Post <ExternalLink size={12} />
                       </a>
                     </div>
-
-                    {/* Metrics */}
-                    <div className="flex gap-6 flex-shrink-0">
-                      <div className="text-center">
-                        <div className="flex items-center gap-1 text-[var(--text-muted)] mb-1">
-                          <Eye size={12} />
-                          <span className="text-xs">Views</span>
+                    <div className="flex gap-8 lg:border-l lg:border-[var(--border-subtle)] lg:pl-8 flex-shrink-0">
+                      <div>
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">
+                          <Eye size={14} /> Views
                         </div>
-                        <span className="font-bold text-sm">{formatViews(post.views)}</span>
+                        <p className="text-2xl font-extrabold text-white tracking-tight">{formatViews(post.views)}</p>
                       </div>
-                      <div className="text-center">
-                        <div className="flex items-center gap-1 text-[var(--text-muted)] mb-1">
-                          <MessageSquare size={12} />
-                          <span className="text-xs">Engagement</span>
+                      <div>
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5">
+                          <Zap size={14} /> Eng. Rate
                         </div>
-                        <span
-                          className="font-bold text-sm"
-                          style={{
-                            color:
-                              post.engagementRate > 5
-                                ? "var(--success)"
-                                : post.engagementRate > 2
-                                ? "var(--warning)"
-                                : "var(--text-secondary)",
-                          }}
-                        >
+                        <p className="text-2xl font-extrabold tracking-tight"
+                          style={{ color: post.engagementRate > 5 ? "var(--success)" : post.engagementRate > 2 ? "var(--warning)" : "var(--text-muted)" }}>
                           {post.engagementRate.toFixed(1)}%
-                        </span>
+                        </p>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!requestScrape.isPending &&
-          (!competitorData.data || competitorData.data.length === 0) &&
-          !searchedHandle && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-[rgba(59,130,246,0.1)] border border-[rgba(59,130,246,0.2)] flex items-center justify-center mb-4">
-                <Users size={28} className="text-[var(--info)]" />
-              </div>
-              <h3 className="heading-sm mb-2">Spy on the competition</h3>
-              <p className="text-[var(--text-muted)] text-sm max-w-md">
-                Enter a creator&apos;s handle to analyze their top-performing content, hooks, and
-                engagement patterns. Learn what works in your niche.
-              </p>
+          </motion.div>
+        ) : !requestScrape.isPending && (
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-28 text-center card bg-transparent border-dashed">
+            <div className="w-20 h-20 rounded-2xl bg-[var(--info)]/10 border border-[var(--info)]/20 flex items-center justify-center mb-6">
+              <Users size={32} className="text-[var(--info)]" />
             </div>
-          )}
-      </main>
+            <h3 className="heading-sm text-white mb-2">Ready to analyze</h3>
+            <p className="body-md max-w-sm">Enter a creator handle to scan their performance metrics and hook strategies.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

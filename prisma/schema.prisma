@@ -83,6 +83,8 @@ model CreatorProfile {
   captions           Caption[]
   scheduledPosts     ScheduledPost[]
   agencyLinks        AgencyCreator[]
+  instagramConnection InstagramConnection?
+  autoDMRules        AutoDMRule[]
   
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -298,4 +300,81 @@ model ApprovalWorkflow {
 
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+}
+
+// ==============================================
+// INSTAGRAM AUTO DM
+// ==============================================
+
+model InstagramConnection {
+  id                 String           @id @default(cuid())
+  creatorId          String           @unique
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  igUserId           String           @unique  // Instagram User ID
+  igUsername          String                    // @handle
+  accessToken        String           @db.Text  // Long-lived token
+  tokenExpiresAt     DateTime?                 // Token expiration
+  pageId             String?                   // Connected Facebook Page ID
+  pageAccessToken    String?          @db.Text  // Page-level access token
+
+  scopes             String[]                  // Granted permissions
+  isActive           Boolean          @default(true)
+
+  autoDMRules        AutoDMRule[]
+
+  connectedAt        DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model AutoDMRule {
+  id                 String              @id @default(cuid())
+  creatorId          String
+  creator            CreatorProfile      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  connectionId       String
+  connection         InstagramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  name               String              // e.g., "Free Guide Auto DM"
+  triggerKeyword     String              // e.g., "GUIDE"
+  triggerType        String              @default("comment") // comment, story_reply
+  matchType          String              @default("contains") // exact, contains
+
+  responseMessage    String              @db.Text
+  linkUrl            String?
+
+  isActive           Boolean             @default(true)
+
+  metrics            AutoDMMetric?
+  logs               AutoDMLog[]
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model AutoDMMetric {
+  id                 String           @id @default(cuid())
+  ruleId             String           @unique
+  rule               AutoDMRule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  timesTriggered     Int              @default(0)
+  successfulSends    Int              @default(0)
+  failedSends        Int              @default(0)
+
+  lastTriggeredAt    DateTime?
+}
+
+model AutoDMLog {
+  id                 String           @id @default(cuid())
+  ruleId             String
+  rule               AutoDMRule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  commentId          String           // Instagram comment ID
+  commenterId        String           // Instagram user who commented
+  commenterUsername  String?
+  commentText        String           @db.Text
+  status             String           // sent, failed, skipped
+  errorMessage       String?
+
+  sentAt             DateTime         @default(now())
 }

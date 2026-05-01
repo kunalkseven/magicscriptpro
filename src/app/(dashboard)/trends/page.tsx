@@ -3,33 +3,30 @@
 import { useState } from "react";
 import { trpc } from "@/trpc/react";
 import {
-  TrendingUp,
-  TrendingDown,
-  Flame,
-  Zap,
-  Filter,
-  RefreshCw,
-  ArrowUpRight,
-  Sparkles,
+  TrendingUp, TrendingDown, Flame, Zap, Filter, RefreshCw,
+  ArrowUpRight, Sparkles, ChevronRight, BarChart3, Globe,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const niches = [
-  "All",
-  "Tech",
-  "Finance",
-  "Fitness",
-  "Education",
-  "Entertainment",
-  "Lifestyle",
-  "Business",
-  "Food",
-];
+const niches = ["All", "Tech", "Finance", "Fitness", "Education", "Entertainment", "Lifestyle", "Business", "Food"];
+
+const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.05 } }
+};
+
+const item = {
+  hidden: { y: 14, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { duration: 0.5, ease } }
+};
 
 function getScoreColor(score: number): string {
   if (score >= 80) return "var(--error)";
-  if (score >= 60) return "var(--accent)";
+  if (score >= 60) return "var(--primary)";
   if (score >= 40) return "var(--warning)";
-  return "var(--text-muted)";
+  return "var(--text-disabled)";
 }
 
 function getVelocityIcon(velocity: number) {
@@ -46,128 +43,123 @@ export default function TrendsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#06070B] text-white">
+    <div className="space-y-8 pb-8">
       {/* Header */}
-      <header className="border-b border-[var(--border-subtle)] bg-[rgba(6,7,11,0.8)] backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--error)] flex items-center justify-center">
-              <Flame size={16} color="white" />
-            </div>
-            <span className="font-bold text-lg">Trend Intelligence</span>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+        <div>
+          <div className="badge mb-4">
+            <Globe size={14} />
+            Market Pulse
           </div>
+          <h1 className="heading-lg text-white mb-2">
+            Trend <span className="text-gradient">Intelligence</span>
+          </h1>
+          <p className="body-md">Real-time signals from global networks, synthesized into actionable hooks.</p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="btn btn-secondary flex-shrink-0 group"
+        >
+          <RefreshCw size={18} className="text-[var(--primary)] group-active:rotate-180 transition-transform duration-500" />
+          Refresh
+        </button>
+      </div>
+
+      {/* Niche Filter */}
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
+        <div className="flex items-center gap-2 px-3.5 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-muted)] mr-2 flex-shrink-0">
+          <Filter size={14} />
+          <span className="text-xs font-bold uppercase tracking-widest">Sector</span>
+        </div>
+        {niches.map((niche) => (
           <button
-            onClick={() => refetch()}
-            className="btn btn-ghost btn-sm flex items-center gap-2 text-sm"
+            key={niche}
+            onClick={() => setSelectedNiche(niche)}
+            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border whitespace-nowrap ${
+              selectedNiche === niche
+                ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg shadow-[var(--primary)]/20"
+                : "bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-[var(--border-default)] hover:bg-[var(--bg-card-hover)]"
+            }`}
           >
-            <RefreshCw size={14} />
-            Refresh
+            {niche}
           </button>
-        </div>
-      </header>
+        ))}
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Niche Filter */}
-        <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-2">
-          <Filter size={16} className="text-[var(--text-muted)] flex-shrink-0" />
-          {niches.map((niche) => (
-            <button
-              key={niche}
-              onClick={() => setSelectedNiche(niche)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border ${
-                selectedNiche === niche
-                  ? "bg-[rgba(108,71,255,0.15)] border-[var(--primary-light)] text-white"
-                  : "bg-transparent border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-default)]"
-              }`}
-            >
-              {niche}
-            </button>
-          ))}
-        </div>
-
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-14 h-14 border-4 border-[rgba(108,71,255,0.2)] border-t-[var(--primary)] rounded-full animate-spin mb-4" />
-            <p className="text-[var(--text-muted)]">Loading trends...</p>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && (!trends || trends.length === 0) && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[rgba(108,71,255,0.1)] border border-[rgba(108,71,255,0.2)] flex items-center justify-center mb-4">
-              <Sparkles size={28} className="text-[var(--primary-light)]" />
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        {isLoading ? (
+          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center py-28 card bg-transparent border-dashed">
+            <div className="relative">
+              <div className="w-16 h-16 border-2 border-[var(--primary)]/20 rounded-full animate-[spin_3s_linear_infinite]" />
+              <div className="absolute inset-0 w-16 h-16 border-t-2 border-[var(--primary)] rounded-full animate-spin" />
+              <BarChart3 className="absolute inset-0 m-auto text-[var(--primary)] animate-pulse" size={24} />
             </div>
-            <h3 className="heading-sm mb-2">No trends yet</h3>
-            <p className="text-[var(--text-muted)] text-sm max-w-md">
-              Trends are scraped automatically every 4 hours by Inngest. Once the first scrape completes,
-              trending topics will appear here.
-            </p>
-          </div>
-        )}
-
-        {/* Trends Grid */}
-        {trends && trends.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p className="mt-6 text-[var(--text-muted)] text-sm font-bold uppercase tracking-widest">Analyzing signals...</p>
+          </motion.div>
+        ) : !trends || trends.length === 0 ? (
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-28 text-center card bg-transparent border-dashed">
+            <div className="w-20 h-20 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex items-center justify-center mb-6">
+              <Sparkles size={32} className="text-[var(--text-muted)]" />
+            </div>
+            <h3 className="heading-sm text-white mb-2">No trends found</h3>
+            <p className="body-md max-w-sm">No signals detected in this sector yet. Scanning runs every 4 hours.</p>
+          </motion.div>
+        ) : (
+          <motion.div key="grid" variants={container} initial="hidden" animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {trends.map((trend) => (
-              <div
-                key={trend.id}
-                className="group bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-5 hover:border-[var(--border-default)] transition-all hover:shadow-lg cursor-pointer"
-              >
-                {/* Top Row: Niche badge + Velocity */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs px-2 py-0.5 rounded-md bg-[rgba(108,71,255,0.08)] text-[var(--primary-light)] border border-[rgba(108,71,255,0.15)] font-medium">
-                    {trend.niche}
-                  </span>
-                  <div className="flex items-center gap-1 text-xs">
+              <motion.div key={trend.id} variants={item}
+                className="card group relative overflow-hidden" style={{ padding: '24px' }}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--primary)]/5 blur-[50px] pointer-events-none group-hover:bg-[var(--primary)]/10 transition-all" />
+                
+                {/* Header */}
+                <div className="flex items-center justify-between mb-5 relative z-10">
+                  <span className="badge">{trend.niche}</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold">
                     {getVelocityIcon(trend.velocity)}
-                    <span
-                      className={
-                        trend.velocity > 0
-                          ? "text-[var(--success)]"
-                          : trend.velocity < 0
-                          ? "text-[var(--error)]"
-                          : "text-[var(--text-muted)]"
-                      }
-                    >
-                      {trend.velocity > 0 ? "+" : ""}
-                      {trend.velocity.toFixed(0)}%
+                    <span className={trend.velocity > 0 ? "text-[var(--success)]" : trend.velocity < 0 ? "text-[var(--error)]" : "text-[var(--text-muted)]"}>
+                      {trend.velocity > 0 ? "+" : ""}{trend.velocity.toFixed(0)}%
                     </span>
                   </div>
                 </div>
 
                 {/* Topic */}
-                <h3 className="font-semibold text-sm leading-snug mb-3 group-hover:text-white transition-colors">
-                  {trend.topic}
-                </h3>
+                <h3 className="heading-sm text-white leading-snug mb-6 line-clamp-2 min-h-[3.5rem]">{trend.topic}</h3>
 
                 {/* Score Bar */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-[rgba(255,255,255,0.05)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${trend.score}%`,
-                        backgroundColor: getScoreColor(trend.score),
-                      }}
-                    />
+                <div className="space-y-3 relative z-10">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                    <span>Intensity</span>
+                    <span className="text-white">{trend.score.toFixed(0)} / 100</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Zap size={12} style={{ color: getScoreColor(trend.score) }} />
-                    <span
-                      className="text-xs font-bold"
-                      style={{ color: getScoreColor(trend.score) }}
-                    >
-                      {trend.score.toFixed(0)}
-                    </span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-2.5 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${trend.score}%` }} transition={{ duration: 1.2, ease }}
+                        className="h-full rounded-full" style={{ backgroundColor: getScoreColor(trend.score) }} />
+                    </div>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${getScoreColor(trend.score)}15`, color: getScoreColor(trend.score), border: `1px solid ${getScoreColor(trend.score)}30` }}>
+                      <Zap size={14} className={trend.score > 70 ? "animate-pulse" : ""} />
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Footer */}
+                <div className="mt-6 pt-5 border-t border-[var(--border-subtle)] flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse" />
+                    <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Active</span>
+                  </div>
+                  <ChevronRight size={18} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-1 transition-all" />
+                </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
-      </main>
+      </AnimatePresence>
     </div>
   );
 }
